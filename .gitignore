@@ -1,0 +1,12 @@
+# Ignore Visual Studio Code settings
+.vscode/
+
+# Ignore all executable files
+*.exe
+
+# Ignore build directories
+build/
+*/build/
+
+# Ignore PPM images
+*.ppm
