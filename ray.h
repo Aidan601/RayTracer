@@ -22,7 +22,7 @@ public:
         direction = vecB;
     }
 
-    vec3 at(double t)
+    vec3 at(double t) const
     {
         return origin + (direction * t);
     }

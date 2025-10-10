@@ -25,7 +25,7 @@ public:
         z = z1;
     }
 
-    vec3 operator+(const vec3 &v)
+    vec3 operator+(const vec3 &v) const
     {
         return vec3(this->x + v.x, this->y + v.y, this->z + v.z);
     }
@@ -35,12 +35,12 @@ public:
         return vec3(this->x + d, this->y + d, this->z + d);
     }
 
-    vec3 operator+=(const vec3 &v)
+    vec3 operator+=(const vec3 &v) const
     {
         return vec3(this->x + v.x, this->y + v.y, this->z + v.z);
     }
 
-    vec3 operator-(const vec3 &v)
+    vec3 operator-(const vec3 &v) const
     {
         return vec3(this->x - v.x, this->y - v.y, this->z - v.z);
     }
@@ -55,7 +55,7 @@ public:
         return vec3(this->x - v.x, this->y - v.y, this->z - v.z);
     }
 
-    vec3 operator*(const vec3 &v)
+    vec3 operator*(const vec3 &v) const
     {
         return vec3(this->x * v.x, this->y * v.y, this->z * v.z);
     }
@@ -106,6 +106,14 @@ public:
     {
         return (sqrt(x * x + y * y + z * z));
     }
+
+    bool contains(const double &n)
+    {
+        if (x == n || y == n || z == n)
+            return true;
+        else
+            return false;
+    }
 };
 
 using point3 = vec3;
@@ -113,6 +121,11 @@ using point3 = vec3;
 inline vec3 unit_vector(const vec3 &v)
 {
     return v / v.length();
+}
+
+inline double dot(const vec3 &v1, const vec3 &v2)
+{
+    return ((v1.x * v2.x) + (v1.y * v2.y) + (v1.z * v2.z));
 }
 
 #endif
