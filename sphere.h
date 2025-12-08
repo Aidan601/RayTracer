@@ -5,30 +5,42 @@
 #include "ray.h"
 #include "hittable.h"
 
-#include <iostream>
-
-class sphere
+class sphere : public hittable
 {
 public:
-    sphere(point3 centerInput, double radiusInput)
-    {
-        center = centerInput;
-        radius = radiusInput;
-    }
+    sphere(const point3 &centerInput, double radiusInput)
+        : center(centerInput), radius(radiusInput) {}
 
-    bool hit(const ray &r, double ray_tmin, double ray_tmax, hit_record &rec) const
+    bool hit(const ray &r, interval ray_t, hit_record &rec) const override
     {
-        double t;
-        auto a = dot(r.direction, r.direction);
-        auto h = dot(r.direction, center - r.origin);
-        auto c = dot((center - r.origin), (center - r.origin)) - (radius * radius);
-        double discriminant = (h * h) - (a * c);
-        if (discriminant < 0) // 0 ROOTS
+        // Ray-sphere intersection using the simplified quadratic
+        vec3 oc = center - r.origin;
+        auto a = r.direction.length_squared();
+        auto h = dot(r.direction, oc);
+        auto c = oc.length_squared() - radius * radius;
+        auto discriminant = h * h - a * c;
+
+        if (discriminant < 0)
             return false;
-        else // 1 or 2 ROOTS (We only calculate the one the camera sees for now)
-            t = (h - sqrt(discriminant)) / a;
 
-        rec.t = t;
+        auto sqrtd = std::sqrt(discriminant);
+
+        // Find the nearest root that lies in the acceptable range.
+        auto root = (h - sqrtd) / a;
+        if (!ray_t.surrounds(root))
+        {
+            root = (h + sqrtd) / a;
+            if (!ray_t.surrounds(root))
+                return false;
+        }
+
+        rec.t = root;
+        rec.p = r.at(rec.t);
+
+        // Outward normal and front-face logic
+        vec3 outward_normal = (rec.p - center) / radius;
+        rec.set_face_normal(r, outward_normal);
+
         return true;
     }
 

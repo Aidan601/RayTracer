@@ -75,6 +75,11 @@ public:
         return vec3(this->x / v.x, this->y / v.y, this->z / v.z);
     }
 
+    vec3 operator-() const
+    {
+        return vec3(-this->x, -this->y, -this->z);
+    }
+
     vec3 operator/(double d) const
     {
         return vec3(this->x / d, this->y / d, this->z / d);
@@ -105,6 +110,11 @@ public:
     double length() const
     {
         return (sqrt(x * x + y * y + z * z));
+    }
+
+    double length_squared() const
+    {
+        return x * x + y * y + z * z;
     }
 
     bool contains(const double &n)
