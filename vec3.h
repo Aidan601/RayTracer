@@ -4,6 +4,9 @@
 #include <iostream>
 #include <cmath>
 
+double random_double();
+double random_double(double min, double max);
+
 class vec3
 {
 public:
@@ -35,9 +38,12 @@ public:
         return vec3(this->x + d, this->y + d, this->z + d);
     }
 
-    vec3 operator+=(const vec3 &v) const
+    vec3 &operator+=(const vec3 &v)
     {
-        return vec3(this->x + v.x, this->y + v.y, this->z + v.z);
+        x += v.x;
+        y += v.y;
+        z += v.z;
+        return *this;
     }
 
     vec3 operator-(const vec3 &v) const
@@ -50,9 +56,12 @@ public:
         return vec3(this->x - d, this->y - d, this->z - d);
     }
 
-    vec3 operator-=(const vec3 &v)
+    vec3 &operator-=(const vec3 &v)
     {
-        return vec3(this->x - v.x, this->y - v.y, this->z - v.z);
+        x -= v.x;
+        y -= v.y;
+        z -= v.z;
+        return *this;
     }
 
     vec3 operator*(const vec3 &v) const
@@ -124,6 +133,16 @@ public:
         else
             return false;
     }
+
+    static vec3 random()
+    {
+        return vec3(random_double(), random_double(), random_double());
+    }
+
+    static vec3 random(double min, double max)
+    {
+        return vec3(random_double(min, max), random_double(min, max), random_double(min, max));
+    }
 };
 
 using point3 = vec3;
@@ -133,9 +152,29 @@ inline vec3 unit_vector(const vec3 &v)
     return v / v.length();
 }
 
+inline vec3 random_unit_vector()
+{
+    while (true)
+    {
+        auto p = vec3::random(-1, 1);
+        auto lensq = p.length_squared();
+        if (lensq <= 1)
+            return p / sqrt(lensq);
+    }
+}
+
 inline double dot(const vec3 &v1, const vec3 &v2)
 {
     return ((v1.x * v2.x) + (v1.y * v2.y) + (v1.z * v2.z));
+}
+
+inline vec3 random_on_hemisphere(const vec3 &normal)
+{
+    vec3 on_unit_sphere = random_unit_vector();
+    if (dot(on_unit_sphere, normal) > 0.0)
+        return on_unit_sphere;
+    else
+        return -on_unit_sphere;
 }
 
 #endif
