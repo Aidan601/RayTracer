@@ -3,6 +3,8 @@
 
 #include "raytracer.h"
 
+class material;
+
 class hit_record
 {
 public:
@@ -10,6 +12,7 @@ public:
     vec3 normal;     // vertex normal
     double t;        // t
     bool front_face; // true if it is front facing
+    shared_ptr<material> mat;
 
     void set_face_normal(const ray &r, const vec3 &outward_normal) // Sets the hit record normal vector.
     {
