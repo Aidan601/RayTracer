@@ -169,6 +169,7 @@ inline vec3 random_unit_vector()
     }
 }
 
+// Dot product
 inline double dot(const vec3 &v1, const vec3 &v2)
 {
     return ((v1.x * v2.x) + (v1.y * v2.y) + (v1.z * v2.z));
@@ -186,6 +187,32 @@ inline vec3 random_on_hemisphere(const vec3 &normal)
 inline vec3 reflect(const vec3 &v, const vec3 &n)
 {
     return v - 2 * dot(v, n) * n;
+}
+
+inline vec3 refract(const vec3 &uv, const vec3 &n, double etai_over_etat)
+{
+    auto cos_theta = std::fmin(dot(-uv, n), 1.0);
+    vec3 r_out_perp = etai_over_etat * (uv + cos_theta * n);
+    vec3 r_out_parallel = -std::sqrt(std::fabs(1.0 - r_out_perp.length_squared())) * n;
+    return r_out_perp + r_out_parallel;
+}
+
+// Cross product
+inline vec3 cross(const vec3 &v1, const vec3 &v2)
+{
+    return vec3(v1.y * v2.z - v1.z * v2.y,
+                v1.z * v2.x - v1.x * v2.z,
+                v1.x * v2.y - v1.y * v2.x);
+}
+
+inline vec3 random_in_unit_disk()
+{
+    while (true)
+    {
+        auto p = vec3(random_double(-1, 1), random_double(-1, 1), 0);
+        if (p.length_squared() < 1)
+            return p;
+    }
 }
 
 #endif
