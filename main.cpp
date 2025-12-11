@@ -395,9 +395,36 @@ void final_scene(int image_width, int samples_per_pixel, int max_depth)
     cam.render(world);
 }
 
+void model_test()
+{
+    auto figgle_texture = make_shared<image_texture>("figglebottom.jpg");
+    auto figgle_surface = make_shared<lambertian>(figgle_texture);
+    // auto globe = make_shared<sphere>(point3(0, 0, 0), 2, figgle_surface);
+    auto cube = make_shared<translate>(
+        make_shared<rotate_y>(
+            box(point3(-1, -1, -1), point3(1, 1, 1), figgle_surface), 45),
+        vec3(0, 0, 0));
+    camera cam;
+
+    cam.aspect_ratio = 16.0 / 9.0;
+    cam.image_width = 400;
+    cam.samples_per_pixel = 100;
+    cam.max_depth = 50;
+    cam.background = color(0.70, 0.80, 1.00);
+
+    cam.vfov = 20;
+    cam.camera_center = point3(0, 0, 12);
+    cam.lookat = point3(0, 0, 0);
+    cam.vup = vec3(0, 1, 0);
+
+    cam.defocus_angle = 0;
+
+    cam.render(hittable_list(cube));
+}
+
 int main()
 {
-    switch (9)
+    switch (1)
     {
     case 1:
         bouncing_spheres();
@@ -425,6 +452,9 @@ int main()
         break;
     case 9:
         final_scene(800, 10000, 40);
+        break;
+    case 10:
+        model_test();
         break;
     default:
         final_scene(400, 250, 4);

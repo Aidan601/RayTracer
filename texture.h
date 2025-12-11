@@ -58,28 +58,57 @@ private:
 class image_texture : public texture
 {
 public:
-    image_texture(const char *filename) : image(filename) {}
+    image_texture()
+        : image(), u_offset(0.0), v_offset(0.0)
+    {
+    }
+
+    image_texture(const char *filename)
+        : image(filename), u_offset(0.0), v_offset(0.0)
+    {
+    }
+
+    image_texture(const char *filename, double u_off, double v_off)
+        : image(filename), u_offset(u_off), v_offset(v_off)
+    {
+    }
 
     color value(double u, double v, const point3 &p) const override
     {
-        // If we have no texture data, then return solid cyan as a debugging aid.
         if (image.height() <= 0)
             return color(0, 1, 1);
 
-        // Clamp input texture coordinates to [0,1] x [1,0]
-        u = interval(0, 1).clamp(u);
-        v = 1.0 - interval(0, 1).clamp(v); // Flip V to image coordinates
+        // Apply offsets BEFORE wrapping
+        u = u + u_offset;
+        v = v + v_offset;
 
-        auto i = int(u * image.width());
-        auto j = int(v * image.height());
+        // Wrap UV into [0,1)
+        u = u - floor(u);
+        v = v - floor(v);
+
+        // Flip V for image coordinates
+        v = 1.0 - v;
+
+        // Convert to pixel space
+        int i = static_cast<int>(u * image.width());
+        int j = static_cast<int>(v * image.height());
+
+        // Clamp to valid pixel indices
+        i = std::min(i, image.width() - 1);
+        j = std::min(j, image.height() - 1);
+
         auto pixel = image.pixel_data(i, j);
 
-        auto color_scale = 1.0 / 255.0;
-        return color(color_scale * pixel[0], color_scale * pixel[1], color_scale * pixel[2]);
+        const double color_scale = 1.0 / 255.0;
+        return color(color_scale * pixel[0],
+                     color_scale * pixel[1],
+                     color_scale * pixel[2]);
     }
 
 private:
     rtw_image image;
+    double u_offset;
+    double v_offset;
 };
 
 class noise_texture : public texture
