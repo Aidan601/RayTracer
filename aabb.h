@@ -8,26 +8,37 @@ class aabb
 public:
     interval x, y, z;
 
-    aabb() {} // The default AABB is empty, since intervals are empty by default.
+    aabb()
+        : x(interval::empty), y(interval::empty), z(interval::empty)
+    {
+        pad_to_minimums();
+    }
 
+    // Three-interval constructor.
     aabb(const interval &x, const interval &y, const interval &z)
-        : x(x), y(y), z(z) {}
+        : x(x), y(y), z(z)
+    {
+        pad_to_minimums();
+    }
 
+    // Two-point constructor.
     aabb(const point3 &a, const point3 &b)
     {
-        // Treat the two points a and b as extrema for the bounding box, so we don't require a
-        // particular minimum/maximum coordinate order.
 
         x = (a.x <= b.x) ? interval(a.x, b.x) : interval(b.x, a.x);
         y = (a.y <= b.y) ? interval(a.y, b.y) : interval(b.y, a.y);
         z = (a.z <= b.z) ? interval(a.z, b.z) : interval(b.z, a.z);
+
+        pad_to_minimums();
     }
 
+    // Surrounding-box constructor.
     aabb(const aabb &box0, const aabb &box1)
     {
         x = interval(box0.x, box1.x);
         y = interval(box0.y, box1.y);
         z = interval(box0.z, box1.z);
+        pad_to_minimums();
     }
 
     const interval &axis_interval(int n) const
@@ -84,6 +95,18 @@ public:
     }
 
     static const aabb empty, universe;
+
+private:
+    void pad_to_minimums()
+    {
+        double delta = 0.0001;
+        if (x.size() < delta)
+            x = x.expand(delta);
+        if (y.size() < delta)
+            y = y.expand(delta);
+        if (z.size() < delta)
+            z = z.expand(delta);
+    }
 };
 
 const aabb aabb::empty = aabb(interval::empty, interval::empty, interval::empty);
