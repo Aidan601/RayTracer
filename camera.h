@@ -12,6 +12,7 @@ public:
     int image_width = 100;     // Pixel count of image width
     int samples_per_pixel = 10;
     int max_depth = 10;
+    color background;
 
     // Position and Orientation
     double vfov = 90;
@@ -110,24 +111,28 @@ private:
         return vec3(random_double() - 0.5, random_double() - 0.5, 0);
     }
 
-    color ray_color(const ray &r, int depth, const hittable &world)
+    color ray_color(const ray &r, int depth, const hittable &world) const
     {
-        if (depth <= 0) // If depth is below 0, no need to keep going
+        // If we've exceeded the ray bounce limit, no more light is gathered.
+        if (depth <= 0)
             return color(0, 0, 0);
 
         hit_record rec;
-        if (world.hit(r, interval(0.001, infinity), rec))
-        {
-            ray scattered;
-            color attenuation;
-            if (rec.mat->scatter(r, rec, attenuation, scattered))
-                return attenuation * ray_color(scattered, depth - 1, world);
-            return color(0, 0, 0);
-        }
-        vec3 unit_direction = unit_vector(r.direction);
-        auto a = 0.5 * (unit_direction.y + 1.0);
-        auto value = (1 - a) * color(1, 1, 1) + a * color(0.5, 0.7, 1);
-        return value;
+
+        // If the ray hits nothing, return the background color.
+        if (!world.hit(r, interval(0.001, infinity), rec))
+            return background;
+
+        ray scattered;
+        color attenuation;
+        color color_from_emission = rec.mat->emitted(rec.u, rec.v, rec.p);
+
+        if (!rec.mat->scatter(r, rec, attenuation, scattered))
+            return color_from_emission;
+
+        color color_from_scatter = attenuation * ray_color(scattered, depth - 1, world);
+
+        return color_from_emission + color_from_scatter;
     }
 
     point3 defocus_disk_sample() const
