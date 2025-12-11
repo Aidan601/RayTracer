@@ -92,6 +92,14 @@ public:
         return *this;
     }
 
+    vec3 &operator*=(const int n)
+    {
+        x = x * n;
+        y = y * n;
+        z = z * n;
+        return *this;
+    }
+
     vec3 operator*(const vec3 &v) const
     {
         return vec3(this->x * v.x, this->y * v.y, this->z * v.z);
