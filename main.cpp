@@ -424,7 +424,7 @@ void model_test()
 
 int main()
 {
-    switch (1)
+    switch (10)
     {
     case 1:
         bouncing_spheres();
