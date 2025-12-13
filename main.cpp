@@ -7,6 +7,7 @@
 #include "bvh.h"
 #include "texture.h"
 #include "quad.h"
+#include "obj.h"
 #include "constant_medium.h"
 
 void quads()
@@ -350,8 +351,7 @@ void final_scene(int image_width, int samples_per_pixel, int max_depth)
     world.add(make_shared<sphere>(center1, center2, 50, sphere_material));
 
     world.add(make_shared<sphere>(point3(260, 150, 45), 50, make_shared<dielectric>(1.5)));
-    world.add(make_shared<sphere>(
-        point3(0, 150, 145), 50, make_shared<metal>(color(0.8, 0.8, 0.9), 1.0)));
+    world.add(make_shared<sphere>(point3(0, 150, 145), 50, make_shared<metal>(color(0.8, 0.8, 0.9), 1.0)));
 
     auto boundary = make_shared<sphere>(point3(360, 150, 145), 70, make_shared<dielectric>(1.5));
     world.add(boundary);
@@ -397,13 +397,15 @@ void final_scene(int image_width, int samples_per_pixel, int max_depth)
 
 void model_test()
 {
-    auto figgle_texture = make_shared<image_texture>("figglebottom.jpg");
-    auto figgle_surface = make_shared<lambertian>(figgle_texture);
-    // auto globe = make_shared<sphere>(point3(0, 0, 0), 2, figgle_surface);
-    auto cube = make_shared<translate>(
+    auto checker = make_shared<image_texture>("house.jpg");
+    auto red = make_shared<lambertian>(checker);
+
+    // Replace the procedural box with an OBJ model from models/cube.obj
+    auto model = make_shared<translate>(
         make_shared<rotate_y>(
-            box(point3(-1, -1, -1), point3(1, 1, 1), figgle_surface), 45),
+            make_shared<obj>("house.obj", red), 45),
         vec3(0, 0, 0));
+
     camera cam;
 
     cam.aspect_ratio = 16.0 / 9.0;
@@ -419,12 +421,13 @@ void model_test()
 
     cam.defocus_angle = 0;
 
-    cam.render(hittable_list(cube));
+    // Render just this model
+    cam.render(hittable_list(model));
 }
 
 int main()
 {
-    switch (10)
+    switch (11)
     {
     case 1:
         bouncing_spheres();
@@ -457,7 +460,7 @@ int main()
         model_test();
         break;
     default:
-        final_scene(400, 250, 4);
+        final_scene(400, 10, 4);
         break;
     }
 }

@@ -20,13 +20,6 @@ public:
 
     rtw_image(const char *image_filename)
     {
-        // Loads image data from the specified file. If the RTW_IMAGES environment variable is
-        // defined, looks only in that directory for the image file. If the image was not found,
-        // searches for the specified image file first from the current directory, then in the
-        // images/ subdirectory, then the _parent's_ images/ subdirectory, and then _that_
-        // parent, on so on, for six levels up. If the image was not loaded successfully,
-        // width() and height() will return 0.
-
         auto filename = std::string(image_filename);
         auto imagedir = getenv("RTW_IMAGES");
 
@@ -37,19 +30,6 @@ public:
             return;
         if (load("images/" + filename))
             return;
-        if (load("../images/" + filename))
-            return;
-        if (load("../../images/" + filename))
-            return;
-        if (load("../../../images/" + filename))
-            return;
-        if (load("../../../../images/" + filename))
-            return;
-        if (load("../../../../../images/" + filename))
-            return;
-        if (load("../../../../../../images/" + filename))
-            return;
-
         std::cerr << "ERROR: Could not load image file '" << image_filename << "'.\n";
     }
 
@@ -61,12 +41,6 @@ public:
 
     bool load(const std::string &filename)
     {
-        // Loads the linear (gamma=1) image data from the given file name. Returns true if the
-        // load succeeded. The resulting data buffer contains the three [0.0, 1.0]
-        // floating-point values for the first pixel (red, then green, then blue). Pixels are
-        // contiguous, going left to right for the width of the image, followed by the next row
-        // below, for the full height of the image.
-
         auto n = bytes_per_pixel; // Dummy out parameter: original components per pixel
         fdata = stbi_loadf(filename.c_str(), &image_width, &image_height, &n, bytes_per_pixel);
         if (fdata == nullptr)
