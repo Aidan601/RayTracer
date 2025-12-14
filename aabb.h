@@ -9,15 +9,19 @@ public:
     interval x, y, z;
 
     aabb()
-        : x(interval::empty), y(interval::empty), z(interval::empty)
     {
+        x = interval(+infinity, -infinity);
+        y = interval(+infinity, -infinity);
+        z = interval(+infinity, -infinity);
         pad_to_minimums();
     }
 
     // Three-interval constructor.
-    aabb(const interval &x, const interval &y, const interval &z)
-        : x(x), y(y), z(z)
+    aabb(const interval &a, const interval &b, const interval &c)
     {
+        x = a;
+        y = b;
+        z = c;
         pad_to_minimums();
     }
 

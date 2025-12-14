@@ -397,14 +397,10 @@ void final_scene(int image_width, int samples_per_pixel, int max_depth)
 
 void model_test()
 {
-    auto checker = make_shared<image_texture>("house.jpg");
-    auto red = make_shared<lambertian>(checker);
+    auto red = make_shared<lambertian>(color(.65, .05, .05));
 
     // Replace the procedural box with an OBJ model from models/cube.obj
-    auto model = make_shared<translate>(
-        make_shared<rotate_y>(
-            make_shared<obj>("house.obj", red), 45),
-        vec3(0, 0, 0));
+    auto model = make_shared<obj>("monkey.obj", red);
 
     camera cam;
 
@@ -415,8 +411,8 @@ void model_test()
     cam.background = color(0.70, 0.80, 1.00);
 
     cam.vfov = 20;
-    cam.camera_center = point3(0, 0, 12);
-    cam.lookat = point3(0, 0, 0);
+    cam.camera_center = point3(7, -7, 5);
+    cam.set_angles_deg(vec3(60, 0, 45));
     cam.vup = vec3(0, 1, 0);
 
     cam.defocus_angle = 0;
@@ -427,40 +423,5 @@ void model_test()
 
 int main()
 {
-    switch (11)
-    {
-    case 1:
-        bouncing_spheres();
-        break;
-    case 2:
-        checkered_spheres();
-        break;
-    case 3:
-        earth();
-        break;
-    case 4:
-        perlin_spheres();
-        break;
-    case 5:
-        quads();
-        break;
-    case 6:
-        simple_light();
-        break;
-    case 7:
-        cornell_box();
-        break;
-    case 8:
-        cornell_smoke();
-        break;
-    case 9:
-        final_scene(800, 10000, 40);
-        break;
-    case 10:
-        model_test();
-        break;
-    default:
-        final_scene(400, 10, 4);
-        break;
-    }
+    model_test();
 }

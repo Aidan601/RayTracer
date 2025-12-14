@@ -16,9 +16,20 @@ public:
 class solid_color : public texture
 {
 public:
-    solid_color(const color &albedo) : albedo(albedo) {}
+    solid_color()
+    {
+        albedo = color(0, 0, 0);
+    }
 
-    solid_color(double red, double green, double blue) : solid_color(color(red, green, blue)) {}
+    solid_color(double red, double green, double blue)
+    {
+        albedo = color(red, green, blue);
+    }
+
+    solid_color(const color &albedo_input)
+    {
+        albedo = albedo_input;
+    }
 
     color value(double u, double v, const point3 &p) const override
     {
@@ -32,11 +43,19 @@ private:
 class checker_texture : public texture
 {
 public:
-    checker_texture(double scale, shared_ptr<texture> even, shared_ptr<texture> odd)
-        : inv_scale(1.0 / scale), even(even), odd(odd) {}
+    checker_texture(double scale, shared_ptr<texture> even_input, shared_ptr<texture> odd_input)
+    {
+        inv_scale = 1.0 / scale;
+        even = even_input;
+        odd = odd_input;
+    }
 
     checker_texture(double scale, const color &c1, const color &c2)
-        : checker_texture(scale, make_shared<solid_color>(c1), make_shared<solid_color>(c2)) {}
+    {
+        inv_scale = scale;
+        even = make_shared<solid_color>(c1);
+        odd = make_shared<solid_color>(c2);
+    }
 
     color value(double u, double v, const point3 &p) const override
     {
@@ -78,11 +97,11 @@ public:
         if (image.height() <= 0)
             return color(0, 1, 1);
 
-        // Apply offsets BEFORE wrapping
+        // Apply offsets
         u = u + u_offset;
         v = v + v_offset;
 
-        // Wrap UV into [0,1)
+        // Wrap UV
         u = u - floor(u);
         v = v - floor(v);
 
@@ -114,7 +133,10 @@ private:
 class noise_texture : public texture
 {
 public:
-    noise_texture(double scale) : scale(scale) {}
+    noise_texture(double scale_input)
+    {
+        scale = scale_input;
+    }
 
     color value(double u, double v, const point3 &p) const override
     {

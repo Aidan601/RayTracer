@@ -8,16 +8,18 @@
 class constant_medium : public hittable
 {
 public:
-    constant_medium(shared_ptr<hittable> boundary, double density, shared_ptr<texture> tex)
-        : boundary(boundary), neg_inv_density(-1 / density),
-          phase_function(make_shared<isotropic>(tex))
+    constant_medium(shared_ptr<hittable> boundary_input, double density, shared_ptr<texture> tex)
     {
+        boundary = boundary_input;
+        neg_inv_density = -1 / density;
+        phase_function = make_shared<isotropic>(tex);
     }
 
-    constant_medium(shared_ptr<hittable> boundary, double density, const color &albedo)
-        : boundary(boundary), neg_inv_density(-1 / density),
-          phase_function(make_shared<isotropic>(albedo))
+    constant_medium(shared_ptr<hittable> boundary_input, double density, const color &albedo)
     {
+        boundary = boundary_input;
+        neg_inv_density = -1 / density;
+        phase_function = make_shared<isotropic>(albedo);
     }
 
     bool hit(const ray &r, interval ray_t, hit_record &rec) const override

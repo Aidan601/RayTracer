@@ -4,11 +4,20 @@
 class interval
 {
 public:
-    double min, max;
+    double min;
+    double max;
 
-    interval() : min(+infinity), max(-infinity) {}
+    interval()
+    {
+        min = -infinity;
+        max = infinity;
+    }
 
-    interval(double min, double max) : min(min), max(max) {}
+    interval(double x, double y)
+    {
+        min = x;
+        max = y;
+    }
 
     interval(const interval &a, const interval &b)
     {

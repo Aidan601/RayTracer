@@ -6,9 +6,13 @@
 class quad : public hittable
 {
 public:
-    quad(const point3 &Q, const vec3 &u, const vec3 &v, shared_ptr<material> mat)
-        : Q(Q), u(u), v(v), mat(mat)
+    quad(const point3 &q_input, const vec3 &u_input, const vec3 &v_input, shared_ptr<material> mat_input)
     {
+        Q = q_input;
+        u = u_input;
+        v = v_input;
+        mat = mat_input;
+
         auto n = cross(u, v);
         normal = unit_vector(n);
         D = dot(normal, Q);

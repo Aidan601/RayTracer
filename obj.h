@@ -21,8 +21,25 @@ public:
              const vec3 &na, const vec3 &nb, const vec3 &nc,
              const vec2 &ta, const vec2 &tb, const vec2 &tc,
              shared_ptr<material> m)
-        : v0(a), v1(b), v2(c), n0(na), n1(nb), n2(nc), t0(ta), t1(tb), t2(tc), mat(m)
     {
+        // Verticies
+        v0 = a;
+        v1 = b;
+        v2 = c;
+
+        // Normals
+        n0 = na;
+        n1 = nb;
+        n2 = nc;
+
+        // Text Coords
+        t0 = ta;
+        t1 = tb;
+        t2 = tc;
+
+        // Material
+        mat = m;
+
         // Bounding box for the triangle
         point3 minp(
             std::fmin(v0.x, std::fmin(v1.x, v2.x)),
@@ -95,16 +112,14 @@ public:
     aabb bounding_box() const override { return bbox; }
 
 private:
-    point3 v0, v1, v2;
-    vec2 t0, t1, t2; // (u,v)
-    vec3 n0, n1, n2;
-    shared_ptr<material> mat;
-    aabb bbox;
+    point3 v0, v1, v2;        // verticies
+    vec2 t0, t1, t2;          // uv of each vert
+    vec3 n0, n1, n2;          // normal vector of each vert
+    shared_ptr<material> mat; // material
+    aabb bbox;                // bounding box
 };
 
-// -------------------------
-// OBJ mesh (BVH-accelerated)
-// -------------------------
+// Obj Mesh
 class obj : public hittable
 {
 public:
@@ -136,10 +151,9 @@ private:
         s.erase(0, i);
     }
 
+    // Parses obj file to get data
     static inline int parse_index(const std::string &tok, int which, bool &present)
     {
-        // tok formats: v, v/vt, v//vn, v/vt/vn
-        // which: 0=v,1=vt,2=vn
         present = false;
 
         int part = 0;
@@ -214,7 +228,7 @@ private:
             }
             else if (tag == "f")
             {
-                // Read all face vertices, then triangulate fan (supports triangles/quads/ngons)
+                // Read all face vertices, then triangulate fan
                 std::vector<std::string> verts;
                 std::string tok;
                 while (ss >> tok)
@@ -224,7 +238,6 @@ private:
 
                 auto fetch_pos = [&](int idx) -> point3
                 {
-                    // OBJ indices are 1-based; negative indices are relative to end
                     if (idx > 0)
                         return positions[idx - 1];
                     return positions[positions.size() + idx];
@@ -270,17 +283,26 @@ private:
                     if (!has_v0 || !has_v1 || !has_v2)
                         continue;
 
-                    point3 a = fetch_pos(v0i);
-                    point3 b = fetch_pos(v1i);
-                    point3 c = fetch_pos(v2i);
+                    point3 a, b, c;
+                    vec3 na, nb, nc;
+                    vec2 ta, tb, tc;
 
-                    vec3 na = has_n0 ? fetch_nrm(n0i) : vec3(0, 0, 0);
-                    vec3 nb = has_n1 ? fetch_nrm(n1i) : vec3(0, 0, 0);
-                    vec3 nc = has_n2 ? fetch_nrm(n2i) : vec3(0, 0, 0);
+                    a = fetch_pos(v0i);
+                    b = fetch_pos(v1i);
+                    c = fetch_pos(v2i);
 
-                    vec2 ta = has_t0 ? fetch_uv(t0i) : vec2(0, 0);
-                    vec2 tb = has_t1 ? fetch_uv(t1i) : vec2(0, 0);
-                    vec2 tc = has_t2 ? fetch_uv(t2i) : vec2(0, 0);
+                    if (has_n0)
+                        na = fetch_nrm(n0i);
+                    if (has_n1)
+                        nb = fetch_nrm(n1i);
+                    if (has_n2)
+                        nc = fetch_nrm(n2i);
+                    if (has_t0)
+                        ta = fetch_uv(t0i);
+                    if (has_t1)
+                        tb = fetch_uv(t1i);
+                    if (has_t2)
+                        tc = fetch_uv(t2i);
 
                     tris.add(make_shared<triangle>(a, b, c, na, nb, nc, ta, tb, tc, mat));
                 }

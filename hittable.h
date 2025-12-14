@@ -38,9 +38,10 @@ public:
 class translate : public hittable
 {
 public:
-    translate(shared_ptr<hittable> object, const vec3 &offset)
-        : object(object), offset(offset)
+    translate(shared_ptr<hittable> object_input, const vec3 &offset_input)
     {
+        object = object_input;
+        offset = offset_input;
         bbox = object->bounding_box() + offset;
     }
 
@@ -70,8 +71,9 @@ private:
 class rotate_y : public hittable
 {
 public:
-    rotate_y(shared_ptr<hittable> object, double angle) : object(object)
+    rotate_y(shared_ptr<hittable> obj, double angle)
     {
+        object = obj;
         auto radians = degrees_to_radians(angle);
         sin_theta = std::sin(radians);
         cos_theta = std::cos(radians);

@@ -14,6 +14,9 @@ public:
     int max_depth = 10;
     color background;
 
+    bool use_angles = false;
+    vec3 angles = vec3(0, 0, 0);
+
     // Position and Orientation
     double vfov = 90;
     vec3 camera_center = point3(0, 0, 0); // also lookfrom
@@ -48,6 +51,12 @@ public:
         std::clog << "\rDONE! \n";
     }
 
+    void set_angles_deg(const vec3 &ang_deg)
+    {
+        angles = ang_deg;
+        use_angles = true;
+    }
+
 private:
     int image_height;
     vec3 first_pixel;
@@ -68,6 +77,46 @@ private:
         auto h = std::tan(theta / 2);
         auto viewport_height = 2 * h * focus_dist;
         auto viewport_width = viewport_height * (double(image_width) / image_height);
+
+        if (use_angles)
+        {
+            const double pitch = degrees_to_radians(angles.x);
+            const double yaw = degrees_to_radians(angles.y);
+            const double roll = degrees_to_radians(angles.z);
+
+            // Forward direction from yaw/pitch (FPS-style):
+            // yaw around +Y, pitch around +X (right-handed)
+            vec3 forward(
+                std::cos(pitch) * std::cos(yaw),
+                std::sin(pitch),
+                std::cos(pitch) * std::sin(yaw));
+            forward = unit_vector(forward);
+
+            // Derive lookat from forward
+            lookat = camera_center + forward;
+
+            // Optional: derive vup from roll (keeps roll meaningful)
+            vec3 world_up(0, 1, 0);
+            vec3 right = cross(forward, world_up);
+
+            // Avoid degeneracy when looking straight up/down
+            if (right.length_squared() < 1e-12)
+            {
+                world_up = vec3(0, 0, 1);
+                right = cross(forward, world_up);
+            }
+            right = unit_vector(right);
+
+            vec3 up = unit_vector(cross(right, forward));
+
+            if (std::fabs(roll) > 1e-12)
+            {
+                // Rodrigues rotation of 'up' around 'forward' by roll
+                up = up * std::cos(roll) + cross(forward, up) * std::sin(roll) + forward * dot(forward, up) * (1 - std::cos(roll));
+            }
+
+            vup = up;
+        }
 
         // Calculate u,v,w
         w = unit_vector(camera_center - lookat);

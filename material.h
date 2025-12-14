@@ -25,8 +25,15 @@ public:
 class lambertian : public material
 {
 public:
-    lambertian(const color &albedo) : tex(make_shared<solid_color>(albedo)) {}
-    lambertian(shared_ptr<texture> tex) : tex(tex) {}
+    lambertian(const color &albedo)
+    {
+        tex = make_shared<solid_color>(albedo);
+    }
+
+    lambertian(shared_ptr<texture> tex_input)
+    {
+        tex = tex_input;
+    }
 
     bool scatter(const ray &r_in, const hit_record &rec, color &attenuation, ray &scattered)
         const override
@@ -48,7 +55,14 @@ private:
 class metal : public material
 {
 public:
-    metal(const color &albedo, double fuzz) : albedo(albedo), fuzz(fuzz < 1 ? fuzz : 1) {}
+    metal(const color &albedo_input, double fuzz_input)
+    {
+        albedo = albedo_input;
+        if (fuzz_input < 1)
+            fuzz = fuzz_input;
+        else
+            fuzz = 1;
+    }
 
     bool scatter(const ray &r_in, const hit_record &rec, color &attenuation, ray &scattered)
         const override
@@ -68,7 +82,10 @@ private:
 class dielectric : public material
 {
 public:
-    dielectric(double refraction_index) : refraction_index(refraction_index) {}
+    dielectric(double refraction_index_input)
+    {
+        refraction_index = refraction_index_input;
+    }
 
     bool scatter(const ray &r_in, const hit_record &rec, color &attenuation, ray &scattered)
         const override
@@ -109,8 +126,15 @@ private:
 class diffuse_light : public material
 {
 public:
-    diffuse_light(shared_ptr<texture> tex) : tex(tex) {}
-    diffuse_light(const color &emit) : tex(make_shared<solid_color>(emit)) {}
+    diffuse_light(shared_ptr<texture> tex_input)
+    {
+        tex = tex_input;
+    }
+
+    diffuse_light(const color &emit)
+    {
+        tex = make_shared<solid_color>(emit);
+    }
 
     color emitted(double u, double v, const point3 &p) const override
     {
@@ -137,8 +161,15 @@ private:
 class isotropic : public material
 {
 public:
-    isotropic(const color &albedo) : tex(make_shared<solid_color>(albedo)) {}
-    isotropic(shared_ptr<texture> tex) : tex(tex) {}
+    isotropic(const color &albedo)
+    {
+        tex = make_shared<solid_color>(albedo);
+    }
+
+    isotropic(shared_ptr<texture> tex_input)
+    {
+        tex = tex_input;
+    }
 
     bool scatter(const ray &r_in, const hit_record &rec, color &attenuation, ray &scattered)
         const override
