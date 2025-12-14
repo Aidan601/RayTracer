@@ -4,6 +4,9 @@
 #include "raytracer.h"
 #include "hittable.h"
 #include "material.h"
+#include "cubemap.h"
+#include <string>
+#include <variant>
 
 class camera
 {
@@ -12,7 +15,8 @@ public:
     int image_width = 100;     // Pixel count of image width
     int samples_per_pixel = 10;
     int max_depth = 10;
-    color background;
+    std::variant<color, std::string> background = color(0.70, 0.80, 1.00);
+    shared_ptr<cubemap> skybox;
 
     bool use_angles = false;
     vec3 angles = vec3(0, 0, 0);
@@ -55,6 +59,28 @@ public:
     {
         angles = ang_deg;
         use_angles = true;
+    }
+
+    void set_from_blender(const point3 &loc_bl, const vec3 &euler_deg_bl)
+    {
+        camera_center = blender_to_rt(loc_bl);
+
+        double rx = degrees_to_radians(euler_deg_bl.x);
+        double ry = degrees_to_radians(euler_deg_bl.y);
+        double rz = degrees_to_radians(euler_deg_bl.z);
+
+        vec3 f_bl(0, 0, -1); // Blender camera forward
+        vec3 u_bl(0, 1, 0);  // Blender camera up
+
+        // XYZ Euler (Blender)
+        f_bl = rot_z(rot_y(rot_x(f_bl, rx), ry), rz);
+        u_bl = rot_z(rot_y(rot_x(u_bl, rx), ry), rz);
+
+        vec3 f = blender_to_rt(f_bl);
+        vec3 up = blender_to_rt(u_bl);
+
+        lookat = camera_center + unit_vector(f);
+        vup = unit_vector(up);
     }
 
 private:
@@ -137,6 +163,19 @@ private:
         auto defocus_radius = focus_dist * std::tan(degrees_to_radians(defocus_angle / 2));
         defocus_disk_u = u * defocus_radius;
         defocus_disk_v = v * defocus_radius;
+
+        // Cubemap
+        skybox.reset();
+        if (std::holds_alternative<std::string>(background))
+        {
+            const auto &name = std::get<std::string>(background);
+            if (!name.empty())
+            {
+                auto cm = make_shared<cubemap>(name);
+                if (cm->is_valid())
+                    skybox = cm;
+            }
+        }
     }
 
     ray get_ray(int i, int j) const
@@ -168,9 +207,15 @@ private:
 
         hit_record rec;
 
-        // If the ray hits nothing, return the background color.
+        // If the ray hits nothing, return the background
         if (!world.hit(r, interval(0.001, infinity), rec))
-            return background;
+        {
+            if (skybox)
+                return skybox->sample(r.direction);
+            if (std::holds_alternative<color>(background))
+                return std::get<color>(background);
+            return color(0, 0, 0); // fallback
+        }
 
         ray scattered;
         color attenuation;
@@ -189,6 +234,31 @@ private:
         // Returns a random point in the camera defocus disk.
         auto p = random_in_unit_disk();
         return camera_center + (p.x * defocus_disk_u) + (p.y * defocus_disk_v);
+    }
+
+    // --- Rotation helpers (Blender-style) ---
+    static vec3 rot_x(const vec3 &p, double a)
+    {
+        double c = std::cos(a), s = std::sin(a);
+        return vec3(p.x, c * p.y - s * p.z, s * p.y + c * p.z);
+    }
+
+    static vec3 rot_y(const vec3 &p, double a)
+    {
+        double c = std::cos(a), s = std::sin(a);
+        return vec3(c * p.x + s * p.z, p.y, -s * p.x + c * p.z);
+    }
+
+    static vec3 rot_z(const vec3 &p, double a)
+    {
+        double c = std::cos(a), s = std::sin(a);
+        return vec3(c * p.x - s * p.y, s * p.x + c * p.y, p.z);
+    }
+
+    static vec3 blender_to_rt(const vec3 &b)
+    {
+        // Blender (Z-up) → RayTracer (Y-up)
+        return vec3(b.x, b.z, -b.y);
     }
 };
 

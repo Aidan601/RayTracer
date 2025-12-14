@@ -84,7 +84,7 @@ void earth()
     cam.image_width = 400;
     cam.samples_per_pixel = 100;
     cam.max_depth = 50;
-    cam.background = color(0.70, 0.80, 1.00);
+    cam.background = "test";
 
     cam.vfov = 20;
     cam.camera_center = point3(0, 0, 12);
@@ -397,10 +397,143 @@ void final_scene(int image_width, int samples_per_pixel, int max_depth)
 
 void model_test()
 {
-    auto red = make_shared<lambertian>(color(.65, .05, .05));
+    hittable_list world;
 
-    // Replace the procedural box with an OBJ model from models/cube.obj
-    auto model = make_shared<obj>("monkey.obj", red);
+    //--- Tree Model ---
+    auto leafs_color = make_shared<image_texture>("leafs.jpg");
+    auto leafs_opacity = make_shared<image_texture>("leafs_o.jpg");
+
+    // Materials
+    auto bark_mat = make_shared<lambertian>(make_shared<image_texture>("bark.jpg"));
+    auto leafs_mat = make_shared<alpha_lambertian>(leafs_color, leafs_opacity, 0.5);
+
+    // Models
+    auto tree_model = make_shared<obj>("tree.obj", bark_mat);
+    auto leafs_model = make_shared<obj>("leafs.obj", leafs_mat);
+
+    world.add(tree_model);
+    world.add(leafs_model);
+
+    // --- Ornaments on an invisible cone surface (Christmas-tree shape) ---
+    // Tree trunk center in OBJ space (x,z). Adjust if your tree isn't centered at origin.
+    const point3 cone_axis_center = point3(-0.1024, 0.0, -0.3769);
+
+    // Cone along +Y: wide at bottom, narrow at top
+    const double bottom_y = 0.0;    // base of tree (cone definition stays the same)
+    const double top_y = 20.0;      // tip height
+    const double base_radius = 7.0; // radius at bottom_y
+
+    // Where on the cone to place ornaments (clipped range, not squished)
+    const double y_min = 5.0;
+    const double y_max = 20.0;
+
+    const int ornament_count = 120;
+    const double ornament_radius = 0.25;
+
+    // Push ornaments slightly outward so they sit on the surface
+    const double surface_push = 0.10;
+
+    // Ornament materials
+    auto red_metal = make_shared<metal>(color(0.9, 0.2, 0.1), 0.15);
+    auto green_metal = make_shared<metal>(color(0.2, 0.9, 0.3), 0.15);
+    auto gold_metal = make_shared<metal>(color(0.9, 0.75, 0.15), 0.05);
+    auto blue_metal = make_shared<metal>(color(0.2, 0.4, 0.9), 0.10);
+
+    auto pick_ornament_mat = [&]() -> shared_ptr<material>
+    {
+        double t = random_double();
+        if (t < 0.25)
+            return red_metal;
+        if (t < 0.50)
+            return green_metal;
+        if (t < 0.75)
+            return gold_metal;
+        return blue_metal;
+    };
+
+    // Helper: cone radius at height y (wide at bottom -> narrow at top)
+    auto cone_radius_at = [&](double y)
+    {
+        double t = (y - bottom_y) / (top_y - bottom_y);
+        t = interval(0, 1).clamp(t);
+        return (1.0 - t) * base_radius;
+    };
+
+    for (int i = 0; i < ornament_count; i++)
+    {
+        double y = y_min + (y_max - y_min) * random_double();
+        double r = cone_radius_at(y);
+
+        double theta = 2.0 * pi * random_double();
+        vec3 radial_dir = unit_vector(vec3(cos(theta), 0, sin(theta)));
+
+        point3 p = point3(
+            cone_axis_center.x + r * radial_dir.x,
+            y,
+            cone_axis_center.z + r * radial_dir.z);
+
+        p += surface_push * radial_dir;
+
+        p += vec3(0.10 * random_double(-1, 1),
+                  0.10 * random_double(-1, 1),
+                  0.10 * random_double(-1, 1));
+
+        world.add(make_shared<sphere>(p, ornament_radius, pick_ornament_mat()));
+    }
+
+    // --- Christmas lights (small emissive spheres) ---
+    // Note: assumes you have diffuse_light(color) material in your codebase.
+    const int light_count = 260;
+    const double light_radius = 0.08;
+    const double light_surface_push = 0.18; // a bit more push so lights don't get buried
+    const double light_y_min = 2.0;         // can start lower than ornaments
+    const double light_y_max = 20.0;
+
+    auto light_red = make_shared<diffuse_light>(color(8.0, 1.0, 1.0));
+    auto light_green = make_shared<diffuse_light>(color(1.0, 8.0, 1.0));
+    auto light_blue = make_shared<diffuse_light>(color(1.0, 1.0, 8.0));
+    auto light_warm = make_shared<diffuse_light>(color(10.0, 6.0, 2.0));
+
+    auto pick_light_mat = [&]() -> shared_ptr<material>
+    {
+        double t = random_double();
+        if (t < 0.25)
+            return light_red;
+        if (t < 0.50)
+            return light_green;
+        if (t < 0.75)
+            return light_blue;
+        return light_warm;
+    };
+
+    for (int i = 0; i < light_count; i++)
+    {
+        // Slight bias upward so there are more lights higher up (optional)
+        double y = light_y_min + (light_y_max - light_y_min) * std::sqrt(random_double());
+        double r = cone_radius_at(y);
+
+        double theta = 2.0 * pi * random_double();
+        vec3 radial_dir = unit_vector(vec3(cos(theta), 0, sin(theta)));
+
+        point3 p = point3(
+            cone_axis_center.x + r * radial_dir.x,
+            y,
+            cone_axis_center.z + r * radial_dir.z);
+
+        // Push outward more than ornaments
+        p += light_surface_push * radial_dir;
+
+        // Tiny jitter so they don't look like a perfect cone grid
+        p += vec3(0.05 * random_double(-1, 1),
+                  0.05 * random_double(-1, 1),
+                  0.05 * random_double(-1, 1));
+
+        world.add(make_shared<sphere>(p, light_radius, pick_light_mat()));
+    }
+
+    // --- Ground ---
+    auto ground_mat = make_shared<lambertian>(color(1, 1, 1));
+    world.add(make_shared<sphere>(point3(0, -1000, 0), 1000, ground_mat));
 
     camera cam;
 
@@ -411,17 +544,20 @@ void model_test()
     cam.background = color(0.70, 0.80, 1.00);
 
     cam.vfov = 20;
-    cam.camera_center = point3(7, -7, 5);
-    cam.set_angles_deg(vec3(60, 0, 45));
+    cam.camera_center = point3(53, 1, 26);
+    cam.set_from_blender(
+        point3(53, 1, 26), // Location from Blender
+        vec3(74, 0, 92)    // Rotation XYZ from Blender
+    );
     cam.vup = vec3(0, 1, 0);
 
     cam.defocus_angle = 0;
 
-    // Render just this model
-    cam.render(hittable_list(model));
+    cam.render(world);
 }
 
 int main()
 {
-    model_test();
+    // model_test();
+    earth();
 }

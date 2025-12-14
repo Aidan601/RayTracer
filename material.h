@@ -20,6 +20,14 @@ public:
         const hit_record &rec,
         color &attenuation,
         ray &scattered) const = 0;
+
+    virtual bool accept_hit(double u, double v, const point3 &p) const
+    {
+        (void)u;
+        (void)v;
+        (void)p;
+        return true; // opaque by default
+    }
 };
 
 class lambertian : public material
@@ -50,6 +58,52 @@ public:
 private:
     // color albedo;
     shared_ptr<texture> tex;
+};
+
+class alpha_lambertian : public material
+{
+public:
+    alpha_lambertian(shared_ptr<texture> color_tex, shared_ptr<texture> opacity_tex)
+    {
+        tex = color_tex;
+        alpha = opacity_tex;
+        alpha_cutoff = 0.5;
+    }
+
+    alpha_lambertian(shared_ptr<texture> color_tex, shared_ptr<texture> opacity_tex, double cutoff)
+    {
+        tex = color_tex;
+        alpha = opacity_tex;
+        alpha_cutoff = cutoff;
+    }
+
+    bool accept_hit(double u, double v, const point3 &p) const override
+    {
+        // white is opaque while black is tranparent
+        color a = alpha->value(u, v, p);
+
+        // If it's a grayscale mask, any channel works; averaging is safe too.
+        double av = (a.x + a.y + a.z) / 3.0;
+        return av >= alpha_cutoff;
+    }
+
+    bool scatter(const ray &r_in, const hit_record &rec,
+                 color &attenuation, ray &scattered) const override
+    {
+        (void)r_in;
+        auto scatter_direction = rec.normal + random_unit_vector();
+        if (scatter_direction.near_zero())
+            scatter_direction = rec.normal;
+
+        scattered = ray(rec.p, scatter_direction, r_in.time);
+        attenuation = tex->value(rec.u, rec.v, rec.p);
+        return true;
+    }
+
+private:
+    shared_ptr<texture> tex;
+    shared_ptr<texture> alpha;
+    double alpha_cutoff;
 };
 
 class metal : public material

@@ -106,6 +106,10 @@ public:
         rec.u = uv.x;
         rec.v = uv.y;
 
+        // If material is transparent here
+        if (rec.mat && !rec.mat->accept_hit(rec.u, rec.v, rec.p))
+            return false;
+
         return true;
     }
 
