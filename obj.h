@@ -54,6 +54,7 @@ public:
         bbox = aabb(minp - vec3(eps, eps, eps), maxp + vec3(eps, eps, eps));
     }
 
+    // Ray/triangle intersections
     bool hit(const ray &r, interval ray_t, hit_record &rec) const override
     {
         // Moller–Trumbore intersection
@@ -88,7 +89,7 @@ public:
         rec.p = r.at(t);
         rec.mat = mat;
 
-        // Barycentric normal interpolation
+        // Normal interpolation
         vec3 interp_n = (1.0 - u - v) * n0 + u * n1 + v * n2;
         if (interp_n.length_squared() < eps)
         {
@@ -100,7 +101,8 @@ public:
         }
 
         rec.set_face_normal(r, interp_n);
-        // Calculate uv
+
+        // Calculate uv for textured triangles
         double w = 1.0 - u - v;
         vec2 uv = w * t0 + u * t1 + v * t2;
         rec.u = uv.x;
@@ -197,7 +199,7 @@ private:
 
         std::vector<point3> positions;
         std::vector<vec3> normals;
-        std::vector<vec3> texcoords; // (u,v,0) if you want later
+        std::vector<vec3> texcoords;
 
         hittable_list tris;
 
@@ -265,7 +267,7 @@ private:
                     return vec2(t.x, t.y);
                 };
 
-                // Fan triangulation: (0,i,i+1)
+                // Fan triangulation
                 for (size_t i = 1; i + 1 < verts.size(); ++i)
                 {
                     bool has_v0, has_v1, has_v2;

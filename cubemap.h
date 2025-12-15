@@ -152,15 +152,7 @@ private:
         ok &= load_face(NEG_X, paths("negx"));
         ok &= load_face(POS_Y, paths("posy"));
         ok &= load_face(NEG_Y, paths("negy"));
-
-        // Support both "posz" and your "poz" spelling
-        {
-            auto posz = paths("posz");
-            auto poz = paths("poz");
-            posz.insert(posz.end(), poz.begin(), poz.end());
-            ok &= load_face(POS_Z, posz);
-        }
-
+        ok &= load_face(POS_Z, paths("posz"));
         ok &= load_face(NEG_Z, paths("negz"));
 
         valid = ok;

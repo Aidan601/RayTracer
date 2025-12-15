@@ -44,7 +44,7 @@ public:
             for (int j = 0; j < image_width; j++)
             {
                 color pixel_color(0, 0, 0);
-                for (int sample = 0; sample < samples_per_pixel; sample++)
+                for (int sample = 0; sample < samples_per_pixel; sample++) // Anti-aliasing
                 {
                     ray r = get_ray(j, i);
                     pixel_color += ray_color(r, max_depth, world);
@@ -61,23 +61,23 @@ public:
         use_angles = true;
     }
 
-    void set_from_blender(const point3 &loc_bl, const vec3 &euler_deg_bl)
+    void set_from_euler(const point3 &loc_bl, const vec3 &euler_deg_bl)
     {
-        camera_center = blender_to_rt(loc_bl);
+        camera_center = euler_to_rt(loc_bl);
 
         double rx = degrees_to_radians(euler_deg_bl.x);
         double ry = degrees_to_radians(euler_deg_bl.y);
         double rz = degrees_to_radians(euler_deg_bl.z);
 
-        vec3 f_bl(0, 0, -1); // Blender camera forward
-        vec3 u_bl(0, 1, 0);  // Blender camera up
+        vec3 f_bl(0, 0, -1); // Camera forward
+        vec3 u_bl(0, 1, 0);  // Camera up
 
-        // XYZ Euler (Blender)
+        // XYZ Euler
         f_bl = rot_z(rot_y(rot_x(f_bl, rx), ry), rz);
         u_bl = rot_z(rot_y(rot_x(u_bl, rx), ry), rz);
 
-        vec3 f = blender_to_rt(f_bl);
-        vec3 up = blender_to_rt(u_bl);
+        vec3 f = euler_to_rt(f_bl);
+        vec3 up = euler_to_rt(u_bl);
 
         lookat = camera_center + unit_vector(f);
         vup = unit_vector(up);
@@ -236,7 +236,7 @@ private:
         return camera_center + (p.x * defocus_disk_u) + (p.y * defocus_disk_v);
     }
 
-    // --- Rotation helpers (Blender-style) ---
+    // Euler Rotation helpers
     static vec3 rot_x(const vec3 &p, double a)
     {
         double c = std::cos(a), s = std::sin(a);
@@ -255,9 +255,8 @@ private:
         return vec3(c * p.x - s * p.y, s * p.x + c * p.y, p.z);
     }
 
-    static vec3 blender_to_rt(const vec3 &b)
+    static vec3 euler_to_rt(const vec3 &b)
     {
-        // Blender (Z-up) → RayTracer (Y-up)
         return vec3(b.x, b.z, -b.y);
     }
 };

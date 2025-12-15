@@ -81,8 +81,6 @@ public:
     {
         // white is opaque while black is tranparent
         color a = alpha->value(u, v, p);
-
-        // If it's a grayscale mask, any channel works; averaging is safe too.
         double av = (a.x + a.y + a.z) / 3.0;
         return av >= alpha_cutoff;
     }
@@ -204,7 +202,6 @@ public:
         (void)rec;
         (void)attenuation;
         (void)scattered;
-        // Light sources don't scatter; they only emit.
         return false;
     }
 

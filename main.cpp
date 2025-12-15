@@ -10,23 +10,52 @@
 #include "obj.h"
 #include "constant_medium.h"
 
-void quads()
+void depth_of_field_demo()
 {
     hittable_list world;
 
-    // Materials
-    auto left_red = make_shared<lambertian>(color(1.0, 0.2, 0.2));
-    auto back_green = make_shared<lambertian>(color(0.2, 1.0, 0.2));
-    auto right_blue = make_shared<lambertian>(color(0.2, 0.2, 1.0));
-    auto upper_orange = make_shared<lambertian>(color(1.0, 0.5, 0.0));
-    auto lower_teal = make_shared<lambertian>(color(0.2, 0.8, 0.8));
+    auto ground = make_shared<lambertian>(color(0.2, 1.0, 0.0));
+    auto center = make_shared<lambertian>(color(0.9, 0.2, 0.2));
+    auto metal_mat = make_shared<metal>(color(0.8, 0.6, 0.2), 0.0);
 
-    // Quads
-    world.add(make_shared<quad>(point3(-3, -2, 5), vec3(0, 0, -4), vec3(0, 4, 0), left_red));
-    world.add(make_shared<quad>(point3(-2, -2, 0), vec3(4, 0, 0), vec3(0, 4, 0), back_green));
-    world.add(make_shared<quad>(point3(3, -2, 1), vec3(0, 0, 4), vec3(0, 4, 0), right_blue));
-    world.add(make_shared<quad>(point3(-2, 3, 1), vec3(4, 0, 0), vec3(0, 0, 4), upper_orange));
-    world.add(make_shared<quad>(point3(-2, -3, 5), vec3(4, 0, 0), vec3(0, 0, -4), lower_teal));
+    world.add(make_shared<sphere>(point3(0.0, -100.5, -1.0), 100.0, ground));
+
+    world.add(make_shared<sphere>(point3(0.0, 0.0, -1.2), 0.5, center));     // (focus this one)
+    world.add(make_shared<sphere>(point3(-1.0, 0.0, -0.8), 0.5, metal_mat)); // closer
+    world.add(make_shared<sphere>(point3(1.0, 0.0, -1.8), 0.5, metal_mat));  // farther
+
+    world = hittable_list(make_shared<bvh_node>(world));
+
+    camera cam;
+
+    cam.aspect_ratio = 1.0;
+    cam.image_width = 800;
+    cam.samples_per_pixel = 500;
+    cam.max_depth = 50;
+
+    cam.vfov = 25;
+    cam.camera_center = point3(-2, 2, 1);
+    cam.lookat = point3(0, 0, -1);
+    cam.vup = vec3(0, 1, 0);
+
+    cam.defocus_angle = 10.0;
+    cam.focus_dist = 3.4;
+
+    cam.render(world);
+}
+
+void house_demo()
+{
+    hittable_list world;
+
+    auto house_texture = make_shared<image_texture>("house_rgb.jpg");
+    auto house_alpha = make_shared<image_texture>("house_alpha.jpg");
+    auto house_mat = make_shared<alpha_lambertian>(house_texture, house_alpha, 1);
+    auto house_model = make_shared<obj>("house.obj", house_mat);
+    world.add(house_model);
+
+    auto ground_mat = make_shared<lambertian>(color(0.0, 0.5804, 0.1255));
+    world.add(make_shared<sphere>(point3(0, -1000, 0), 1000, ground_mat));
 
     camera cam;
 
@@ -36,71 +65,24 @@ void quads()
     cam.max_depth = 50;
     cam.background = color(0.70, 0.80, 1.00);
 
-    cam.vfov = 80;
-    cam.camera_center = point3(0, 0, 9);
-    cam.lookat = point3(0, 0, 0);
+    cam.vfov = 25;
+    cam.camera_center = point3(53, 1, 26);
+    cam.set_from_euler(
+        point3(17.0693, -36.4857, 8.76114), // Location
+        vec3(82.7268, 0, 22.9697)           // Rotation
+    );
     cam.vup = vec3(0, 1, 0);
 
     cam.defocus_angle = 0;
 
     cam.render(world);
-}
-
-void perlin_spheres()
-{
-    hittable_list world;
-
-    auto pertext = make_shared<noise_texture>(4);
-    world.add(make_shared<sphere>(point3(0, -1000, 0), 1000, make_shared<lambertian>(pertext)));
-    world.add(make_shared<sphere>(point3(0, 2, 0), 2, make_shared<lambertian>(pertext)));
-
-    camera cam;
-
-    cam.aspect_ratio = 16.0 / 9.0;
-    cam.image_width = 400;
-    cam.samples_per_pixel = 100;
-    cam.max_depth = 50;
-    cam.background = color(0.70, 0.80, 1.00);
-
-    cam.vfov = 20;
-    cam.camera_center = point3(13, 2, 3);
-    cam.lookat = point3(0, 0, 0);
-    cam.vup = vec3(0, 1, 0);
-
-    cam.defocus_angle = 0;
-
-    cam.render(world);
-}
-
-void earth()
-{
-    auto earth_texture = make_shared<image_texture>("earthmap.jpg");
-    auto earth_surface = make_shared<lambertian>(earth_texture);
-    auto globe = make_shared<sphere>(point3(0, 0, 0), 2, earth_surface);
-
-    camera cam;
-
-    cam.aspect_ratio = 16.0 / 9.0;
-    cam.image_width = 400;
-    cam.samples_per_pixel = 100;
-    cam.max_depth = 50;
-    cam.background = "test";
-
-    cam.vfov = 20;
-    cam.camera_center = point3(0, 0, 12);
-    cam.lookat = point3(0, 0, 0);
-    cam.vup = vec3(0, 1, 0);
-
-    cam.defocus_angle = 0;
-
-    cam.render(hittable_list(globe));
 }
 
 void bouncing_spheres()
 {
     hittable_list world;
 
-    auto checker = make_shared<checker_texture>(0.32, color(.2, .3, .1), color(.9, .9, .9));
+    auto checker = make_shared<solid_color>(color(1.0, 0.0, 0.0));
     world.add(make_shared<sphere>(point3(0, -1000, 0), 1000, make_shared<lambertian>(checker)));
 
     for (int a = -11; a < 11; a++)
@@ -140,20 +122,11 @@ void bouncing_spheres()
         }
     }
 
-    auto material1 = make_shared<dielectric>(1.5);
-    world.add(make_shared<sphere>(point3(0, 1, 0), 1.0, material1));
-
-    auto material2 = make_shared<lambertian>(color(0.4, 0.2, 0.1));
-    world.add(make_shared<sphere>(point3(-4, 1, 0), 1.0, material2));
-
-    auto material3 = make_shared<metal>(color(0.7, 0.6, 0.5), 0.0);
-    world.add(make_shared<sphere>(point3(4, 1, 0), 1.0, material3));
-
     world = hittable_list(make_shared<bvh_node>(world));
 
     camera cam;
 
-    cam.aspect_ratio = 16.0 / 9.0;
+    cam.aspect_ratio = 1;
     cam.image_width = 400;
     cam.samples_per_pixel = 100;
     cam.max_depth = 50;
@@ -170,26 +143,77 @@ void bouncing_spheres()
     cam.render(world);
 }
 
-void checkered_spheres()
+void material_showcase()
 {
     hittable_list world;
 
-    auto checker = make_shared<checker_texture>(0.32, color(.2, .3, .1), color(.9, .9, .9));
+    // Ground
+    auto ground_mat = make_shared<lambertian>(color(0.8, 0.8, 0.8));
+    world.add(make_shared<sphere>(point3(0, -100.5, -1), 100.0, ground_mat));
 
-    world.add(make_shared<sphere>(point3(0, -10, 0), 10, make_shared<lambertian>(checker)));
-    world.add(make_shared<sphere>(point3(0, 10, 0), 10, make_shared<lambertian>(checker)));
+    // Sphere positions (left -> right)
+    const double r = 0.5;
+    point3 p0(-1.5, 0.0, -1.0);
+    point3 p1(-0.5, 0.0, -1.0);
+    point3 p2(0.5, 0.0, -1.0);
+    point3 p3(1.5, 0.0, -1.0);
+
+    // Materials
+    auto diffuse_mat = make_shared<lambertian>(color(0.8, 0.2, 0.2));     // diffuse
+    auto specular_mat = make_shared<metal>(color(0.8, 0.8, 0.8), 0.05);   // specular (metal)
+    auto dielectric_mat = make_shared<dielectric>(1.5);                   // dielectric (glass)
+    auto emissive_mat = make_shared<diffuse_light>(color(6.0, 6.0, 6.0)); // emissive
+
+    // Spheres: diffuse, specular, dielectric, emissive
+    world.add(make_shared<sphere>(p0, r, diffuse_mat));
+    world.add(make_shared<sphere>(p1, r, specular_mat));
+    world.add(make_shared<sphere>(p2, r, dielectric_mat));
+    world.add(make_shared<sphere>(p3, r, emissive_mat));
+
+    // Add a light so the non-emissive spheres are visible (area light above)
+    auto light_mat = make_shared<diffuse_light>(color(4.0, 4.0, 4.0));
+    world.add(make_shared<quad>(point3(-2, 2.5, -1.5), vec3(4, 0, 0), vec3(0, 0, 3), light_mat));
+
+    // Optional BVH for consistency
+    world = hittable_list(make_shared<bvh_node>(world));
+
+    camera cam;
+    cam.aspect_ratio = 1.0;
+    cam.image_width = 400;
+    cam.samples_per_pixel = 500;
+    cam.max_depth = 100;
+
+    cam.background = color(0.0, 0.0, 0.0);
+
+    cam.vfov = 65;
+    cam.camera_center = point3(0, 1.0, 2.5);
+    cam.lookat = point3(0, 0, -1.0);
+    cam.vup = vec3(0, 1, 0);
+
+    cam.defocus_angle = 0;
+
+    cam.render(world);
+}
+
+void perlin_spheres()
+{
+    hittable_list world;
+
+    auto pertext = make_shared<noise_texture>(4);
+    world.add(make_shared<sphere>(point3(0, 0, -1), 0.5, make_shared<lambertian>(pertext)));
+    world.add(make_shared<sphere>(point3(0, -100.5, -1), 100, make_shared<lambertian>(pertext)));
 
     camera cam;
 
-    cam.aspect_ratio = 16.0 / 9.0;
+    cam.aspect_ratio = 1.0;
     cam.image_width = 400;
     cam.samples_per_pixel = 100;
     cam.max_depth = 50;
     cam.background = color(0.70, 0.80, 1.00);
 
     cam.vfov = 20;
-    cam.camera_center = point3(13, 2, 3);
-    cam.lookat = point3(0, 0, 0);
+    cam.camera_center = point3(0, 0, 4);
+    cam.lookat = point3(0, 0, -1);
     cam.vup = vec3(0, 1, 0);
 
     cam.defocus_angle = 0;
@@ -197,205 +221,7 @@ void checkered_spheres()
     cam.render(world);
 }
 
-void simple_light()
-{
-    hittable_list world;
-
-    auto pertext = make_shared<noise_texture>(4);
-    world.add(make_shared<sphere>(point3(0, -1000, 0), 1000, make_shared<lambertian>(pertext)));
-    world.add(make_shared<sphere>(point3(0, 2, 0), 2, make_shared<lambertian>(pertext)));
-
-    auto difflight = make_shared<diffuse_light>(color(4, 4, 4));
-    world.add(make_shared<sphere>(point3(0, 7, 0), 2, difflight));
-    world.add(make_shared<quad>(point3(3, 1, -2), vec3(2, 0, 0), vec3(0, 2, 0), difflight));
-
-    camera cam;
-
-    cam.aspect_ratio = 16.0 / 9.0;
-    cam.image_width = 400;
-    cam.samples_per_pixel = 100;
-    cam.max_depth = 50;
-    cam.background = color(0, 0, 0);
-
-    cam.vfov = 20;
-    cam.camera_center = point3(26, 3, 6);
-    cam.lookat = point3(0, 2, 0);
-    cam.vup = vec3(0, 1, 0);
-
-    cam.defocus_angle = 0;
-
-    cam.render(world);
-}
-
-void cornell_box()
-{
-    hittable_list world;
-
-    auto red = make_shared<lambertian>(color(.65, .05, .05));
-    auto white = make_shared<lambertian>(color(.73, .73, .73));
-    auto green = make_shared<lambertian>(color(.12, .45, .15));
-    auto light = make_shared<diffuse_light>(color(15, 15, 15));
-
-    world.add(make_shared<quad>(point3(555, 0, 0), vec3(0, 555, 0), vec3(0, 0, 555), green));
-    world.add(make_shared<quad>(point3(0, 0, 0), vec3(0, 555, 0), vec3(0, 0, 555), red));
-    world.add(make_shared<quad>(point3(343, 554, 332), vec3(-130, 0, 0), vec3(0, 0, -105), light));
-    world.add(make_shared<quad>(point3(0, 0, 0), vec3(555, 0, 0), vec3(0, 0, 555), white));
-    world.add(make_shared<quad>(point3(555, 555, 555), vec3(-555, 0, 0), vec3(0, 0, -555), white));
-    world.add(make_shared<quad>(point3(0, 0, 555), vec3(555, 0, 0), vec3(0, 555, 0), white));
-
-    shared_ptr<hittable> box1 = box(point3(0, 0, 0), point3(165, 330, 165), white);
-    box1 = make_shared<rotate_y>(box1, 15);
-    box1 = make_shared<translate>(box1, vec3(265, 0, 295));
-    world.add(box1);
-
-    shared_ptr<hittable> box2 = box(point3(0, 0, 0), point3(165, 165, 165), white);
-    box2 = make_shared<rotate_y>(box2, -18);
-    box2 = make_shared<translate>(box2, vec3(130, 0, 65));
-    world.add(box2);
-
-    camera cam;
-
-    cam.aspect_ratio = 1.0;
-    cam.image_width = 600;
-    cam.samples_per_pixel = 200;
-    cam.max_depth = 50;
-    cam.background = color(0, 0, 0);
-
-    cam.vfov = 40;
-    cam.camera_center = point3(278, 278, -800);
-    cam.lookat = point3(278, 278, 0);
-    cam.vup = vec3(0, 1, 0);
-
-    cam.defocus_angle = 0;
-
-    cam.render(world);
-}
-
-void cornell_smoke()
-{
-    hittable_list world;
-
-    auto red = make_shared<lambertian>(color(.65, .05, .05));
-    auto white = make_shared<lambertian>(color(.73, .73, .73));
-    auto green = make_shared<lambertian>(color(.12, .45, .15));
-    auto light = make_shared<diffuse_light>(color(7, 7, 7));
-
-    world.add(make_shared<quad>(point3(555, 0, 0), vec3(0, 555, 0), vec3(0, 0, 555), green));
-    world.add(make_shared<quad>(point3(0, 0, 0), vec3(0, 555, 0), vec3(0, 0, 555), red));
-    world.add(make_shared<quad>(point3(113, 554, 127), vec3(330, 0, 0), vec3(0, 0, 305), light));
-    world.add(make_shared<quad>(point3(0, 555, 0), vec3(555, 0, 0), vec3(0, 0, 555), white));
-    world.add(make_shared<quad>(point3(0, 0, 0), vec3(555, 0, 0), vec3(0, 0, 555), white));
-    world.add(make_shared<quad>(point3(0, 0, 555), vec3(555, 0, 0), vec3(0, 555, 0), white));
-
-    shared_ptr<hittable> box1 = box(point3(0, 0, 0), point3(165, 330, 165), white);
-    box1 = make_shared<rotate_y>(box1, 15);
-    box1 = make_shared<translate>(box1, vec3(265, 0, 295));
-
-    shared_ptr<hittable> box2 = box(point3(0, 0, 0), point3(165, 165, 165), white);
-    box2 = make_shared<rotate_y>(box2, -18);
-    box2 = make_shared<translate>(box2, vec3(130, 0, 65));
-
-    world.add(make_shared<constant_medium>(box1, 0.01, color(0, 0, 0)));
-    world.add(make_shared<constant_medium>(box2, 0.01, color(1, 1, 1)));
-
-    camera cam;
-
-    cam.aspect_ratio = 1.0;
-    cam.image_width = 600;
-    cam.samples_per_pixel = 200;
-    cam.max_depth = 50;
-    cam.background = color(0, 0, 0);
-
-    cam.vfov = 40;
-    cam.camera_center = point3(278, 278, -800);
-    cam.lookat = point3(278, 278, 0);
-    cam.vup = vec3(0, 1, 0);
-
-    cam.defocus_angle = 0;
-
-    cam.render(world);
-}
-
-void final_scene(int image_width, int samples_per_pixel, int max_depth)
-{
-    hittable_list boxes1;
-    auto ground = make_shared<lambertian>(color(0.48, 0.83, 0.53));
-
-    int boxes_per_side = 20;
-    for (int i = 0; i < boxes_per_side; i++)
-    {
-        for (int j = 0; j < boxes_per_side; j++)
-        {
-            auto w = 100.0;
-            auto x0 = -1000.0 + i * w;
-            auto z0 = -1000.0 + j * w;
-            auto y0 = 0.0;
-            auto x1 = x0 + w;
-            auto y1 = random_double(1, 101);
-            auto z1 = z0 + w;
-
-            boxes1.add(box(point3(x0, y0, z0), point3(x1, y1, z1), ground));
-        }
-    }
-
-    hittable_list world;
-
-    world.add(make_shared<bvh_node>(boxes1));
-
-    auto light = make_shared<diffuse_light>(color(7, 7, 7));
-    world.add(make_shared<quad>(point3(123, 554, 147), vec3(300, 0, 0), vec3(0, 0, 265), light));
-
-    auto center1 = point3(400, 400, 200);
-    auto center2 = center1 + vec3(30, 0, 0);
-    auto sphere_material = make_shared<lambertian>(color(0.7, 0.3, 0.1));
-    world.add(make_shared<sphere>(center1, center2, 50, sphere_material));
-
-    world.add(make_shared<sphere>(point3(260, 150, 45), 50, make_shared<dielectric>(1.5)));
-    world.add(make_shared<sphere>(point3(0, 150, 145), 50, make_shared<metal>(color(0.8, 0.8, 0.9), 1.0)));
-
-    auto boundary = make_shared<sphere>(point3(360, 150, 145), 70, make_shared<dielectric>(1.5));
-    world.add(boundary);
-    world.add(make_shared<constant_medium>(boundary, 0.2, color(0.2, 0.4, 0.9)));
-    boundary = make_shared<sphere>(point3(0, 0, 0), 5000, make_shared<dielectric>(1.5));
-    world.add(make_shared<constant_medium>(boundary, .0001, color(1, 1, 1)));
-
-    auto emat = make_shared<lambertian>(make_shared<image_texture>("earthmap.jpg"));
-    world.add(make_shared<sphere>(point3(400, 200, 400), 100, emat));
-    auto pertext = make_shared<noise_texture>(0.2);
-    world.add(make_shared<sphere>(point3(220, 280, 300), 80, make_shared<lambertian>(pertext)));
-
-    hittable_list boxes2;
-    auto white = make_shared<lambertian>(color(.73, .73, .73));
-    int ns = 1000;
-    for (int j = 0; j < ns; j++)
-    {
-        boxes2.add(make_shared<sphere>(point3::random(0, 165), 10, white));
-    }
-
-    world.add(make_shared<translate>(
-        make_shared<rotate_y>(
-            make_shared<bvh_node>(boxes2), 15),
-        vec3(-100, 270, 395)));
-
-    camera cam;
-
-    cam.aspect_ratio = 1.0;
-    cam.image_width = image_width;
-    cam.samples_per_pixel = samples_per_pixel;
-    cam.max_depth = max_depth;
-    cam.background = color(0, 0, 0);
-
-    cam.vfov = 40;
-    cam.camera_center = point3(478, 278, -600);
-    cam.lookat = point3(278, 278, 0);
-    cam.vup = vec3(0, 1, 0);
-
-    cam.defocus_angle = 0;
-
-    cam.render(world);
-}
-
-void model_test()
+void final_render()
 {
     hittable_list world;
 
@@ -414,21 +240,18 @@ void model_test()
     world.add(tree_model);
     world.add(leafs_model);
 
-    // --- Ornaments on an invisible cone surface (Christmas-tree shape) ---
-    // Tree trunk center in OBJ space (x,z). Adjust if your tree isn't centered at origin.
+    // --- Ornaments---
     const point3 cone_axis_center = point3(-0.1024, 0.0, -0.3769);
 
-    // Cone along +Y: wide at bottom, narrow at top
-    const double bottom_y = 0.0;    // base of tree (cone definition stays the same)
+    const double bottom_y = 0.0;    // base of tree
     const double top_y = 20.0;      // tip height
     const double base_radius = 7.0; // radius at bottom_y
 
-    // Where on the cone to place ornaments (clipped range, not squished)
     const double y_min = 5.0;
     const double y_max = 20.0;
 
-    const int ornament_count = 120;
-    const double ornament_radius = 0.25;
+    const int ornament_count = 60;
+    const double ornament_radius = 0.5;
 
     // Push ornaments slightly outward so they sit on the surface
     const double surface_push = 0.10;
@@ -451,7 +274,7 @@ void model_test()
         return blue_metal;
     };
 
-    // Helper: cone radius at height y (wide at bottom -> narrow at top)
+    // Helper: cone radius at height y
     auto cone_radius_at = [&](double y)
     {
         double t = (y - bottom_y) / (top_y - bottom_y);
@@ -481,8 +304,7 @@ void model_test()
         world.add(make_shared<sphere>(p, ornament_radius, pick_ornament_mat()));
     }
 
-    // --- Christmas lights (small emissive spheres) ---
-    // Note: assumes you have diffuse_light(color) material in your codebase.
+    // --- Christmas lights ---
     const int light_count = 260;
     const double light_radius = 0.08;
     const double light_surface_push = 0.18; // a bit more push so lights don't get buried
@@ -535,20 +357,84 @@ void model_test()
     auto ground_mat = make_shared<lambertian>(color(1, 1, 1));
     world.add(make_shared<sphere>(point3(0, -1000, 0), 1000, ground_mat));
 
+    // --- Presents---
+    auto wrap_red = make_shared<lambertian>(color(0.85, 0.10, 0.10));
+    auto wrap_green = make_shared<lambertian>(color(0.10, 0.70, 0.20));
+    auto wrap_blue = make_shared<lambertian>(color(0.10, 0.25, 0.85));
+    auto wrap_white = make_shared<lambertian>(color(0.95, 0.95, 0.95));
+    auto wrap_gold = make_shared<metal>(color(0.90, 0.75, 0.20), 0.05);
+
+    auto pick_wrap = [&]() -> shared_ptr<material>
+    {
+        double t = random_double();
+        if (t < 0.20)
+            return wrap_red;
+        if (t < 0.40)
+            return wrap_green;
+        if (t < 0.60)
+            return wrap_blue;
+        if (t < 0.80)
+            return wrap_white;
+        return wrap_gold;
+    };
+
+    // Helper: make one present centered at 'c' with size 's' and yaw rotation.
+    auto add_present = [&](const point3 &c, const vec3 &s, double yaw_deg)
+    {
+        // Build box in local space around origin, sitting on y=0
+        point3 a(-0.5 * s.x, 0.0, -0.5 * s.z);
+        point3 b(0.5 * s.x, s.y, 0.5 * s.z);
+
+        auto gift = box(a, b, pick_wrap());
+
+        // Rotate around Y, then translate into place
+        shared_ptr<hittable> placed =
+            make_shared<translate>(
+                make_shared<rotate_y>(gift, yaw_deg),
+                vec3(c.x, c.y, c.z));
+
+        world.add(placed);
+    };
+
+    const int present_count = 140;
+    const double ring_min = 5;
+    const double ring_max = 30.0;
+
+    for (int i = 0; i < present_count; i++)
+    {
+        double theta = 2.0 * pi * random_double();
+        double r = ring_min + (ring_max - ring_min) * random_double();
+
+        // Center around the tree base (your trunk center is cone_axis_center.xz)
+        point3 c(
+            cone_axis_center.x + r * std::cos(theta),
+            0.0, // on ground
+            cone_axis_center.z + r * std::sin(theta));
+
+        // Random present dimensions
+        vec3 s(
+            random_double(0.8, 2.2),  // width (x)
+            random_double(0.5, 1.8),  // height (y)
+            random_double(0.8, 2.2)); // depth (z)
+
+        double yaw = random_double(0.0, 360.0);
+
+        add_present(c, s, yaw);
+    }
+
     camera cam;
 
     cam.aspect_ratio = 16.0 / 9.0;
     cam.image_width = 400;
     cam.samples_per_pixel = 100;
     cam.max_depth = 50;
-    cam.background = color(0.70, 0.80, 1.00);
+    cam.background = "dusk";
 
     cam.vfov = 20;
     cam.camera_center = point3(53, 1, 26);
-    cam.set_from_blender(
-        point3(53, 1, 26), // Location from Blender
-        vec3(74, 0, 92)    // Rotation XYZ from Blender
-    );
+    cam.set_from_euler(
+        point3(53, 1, 26),
+        vec3(74, 0, 92));
     cam.vup = vec3(0, 1, 0);
 
     cam.defocus_angle = 0;
@@ -558,6 +444,32 @@ void model_test()
 
 int main()
 {
-    // model_test();
-    earth();
+    switch (1)
+    {
+    case 1:
+        depth_of_field_demo();
+        break;
+
+    case 2:
+        house_demo();
+        break;
+
+    case 3:
+        bouncing_spheres();
+        break;
+
+    case 4:
+        material_showcase();
+        break;
+
+    case 5:
+        perlin_spheres();
+        break;
+
+    case 6:
+        final_render();
+        break;
+    }
+
+    return 0;
 }

@@ -1,0 +1,6 @@
+To run the program execuate the following commands in the root folder path:
+cmake -B build
+cmake --build build
+build\Debug\RayTracer.exe > image.ppm
+
+Change the case value in the main function in main.cpp to get different renders!

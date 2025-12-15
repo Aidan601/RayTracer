@@ -33,6 +33,7 @@ public:
 
     aabb bounding_box() const override { return bbox; }
 
+    // Ray/sphere intersections
     bool hit(const ray &r, interval ray_t, hit_record &rec) const override
     {
         // Ray-sphere intersection using the simplified quadratic
@@ -48,7 +49,7 @@ public:
 
         auto sqrtd = std::sqrt(discriminant);
 
-        // Find the nearest root that lies in the acceptable range.
+        // Find the nearest root that lies in the acceptable range
         auto root = (h - sqrtd) / a;
         if (!ray_t.surrounds(root))
         {
@@ -78,6 +79,7 @@ private:
     shared_ptr<material> mat;
     aabb bbox;
 
+    // Textured spheres
     static void get_sphere_uv(const point3 &p, double &u, double &v)
     {
         auto theta = std::acos(-p.y);
